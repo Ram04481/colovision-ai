@@ -1,0 +1,18 @@
+server:
+  port: ${SERVER_PORT:8080}
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:mysql://localhost:3306/colorectal_ai?createDatabaseIfNotExist=true&serverTimezone=UTC}
+    username: ${DATABASE_USERNAME:root}
+    password: ${DATABASE_PASSWORD:ram123}
+  jpa:
+    hibernate.ddl-auto: update
+    open-in-view: false
+  servlet.multipart.max-file-size: ${MAX_UPLOAD_MB:10}MB
+  servlet.multipart.max-request-size: ${MAX_UPLOAD_MB:10}MB
+app:
+  jwt-secret: ${JWT_SECRET_KEY:change-this-to-a-long-random-secret-at-least-32-characters}
+  access-token-expire-minutes: ${ACCESS_TOKEN_EXPIRE_MINUTES:60}
+  cors-origins: ${CORS_ORIGINS:http://localhost:5173}
+  upload-dir: ${UPLOAD_DIR:uploads}
+  models-dir: ${MODELS_DIR:models}

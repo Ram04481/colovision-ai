@@ -1,0 +1,11 @@
+import { ArrowRight, FileText, LockKeyhole, ScanLine, UsersRound } from "lucide-react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { FeatureCard } from "../components/FeatureCard";
+const workflow = ["Medical Image", "Preprocessing", "Segmentation", "Tissue Region Detection", "Classification", "AI Result", "Medical Report"];
+export function Home() { return <>
+  <section className="hero"><div><p className="eyebrow">DEEP LEARNING · RESEARCH PLATFORM</p><motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>AI-powered colorectal cancer tissue segmentation and classification.</motion.h1><p className="lead">Deep-learning-based image segmentation and tissue classification for colorectal image analysis.</p><div className="actions"><Link className="button" to="/register">Get Started <ArrowRight size={18}/></Link><Link className="button secondary" to="/login">Login</Link></div></div><div className="hero-visual"><ScanLine size={74}/><span>AI analysis workspace</span><small>Secure · Traceable · Research-ready</small></div></section>
+  <section className="section"><p className="eyebrow">CAPABILITIES</p><h2>Made for structured clinical-image research</h2><div className="card-grid"><FeatureCard icon={ScanLine} title="AI Image Segmentation" text="Generate tissue masks and visual overlays from supported image uploads."/><FeatureCard icon={UsersRound} title="Patient Management" text="Organise patient details, source images, analysis history and outcomes."/><FeatureCard icon={FileText} title="Automated Reports" text="Prepare professional, reproducible PDF analysis reports."/><FeatureCard icon={LockKeyhole} title="Secure Authentication" text="Role-aware access with administrator approval and protected records."/></div></section>
+  <section className="section workflow"><p className="eyebrow">WORKFLOW</p><h2>From image to report</h2><div>{workflow.map((item, i) => <span key={item}>{item}{i < workflow.length - 1 && <b>↓</b>}</span>)}</div></section>
+  <aside className="disclaimer"><b>Research disclaimer:</b> This system is intended for research and decision-support purposes and is not a substitute for professional medical diagnosis.</aside>
+</>; }

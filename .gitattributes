@@ -1,0 +1,6 @@
+# Git LFS tracking for large model files
+ML_API/*.pth filter=lfs diff=lfs merge=lfs -text
+backend/models/*.onnx filter=lfs diff=lfs merge=lfs -text
+
+# Large zip files (should be removed or tracked via LFS if needed)
+*.zip filter=lfs diff=lfs merge=lfs -text

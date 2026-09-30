@@ -1,0 +1,3 @@
+package com.colovision.config;
+import java.util.Arrays; import org.springframework.boot.context.properties.EnableConfigurationProperties; import org.springframework.context.annotation.*; import org.springframework.web.servlet.config.annotation.*;
+@Configuration @EnableConfigurationProperties(AppProperties.class) public class WebConfig implements WebMvcConfigurer { private final AppProperties p; public WebConfig(AppProperties p){this.p=p;} public void addCorsMappings(CorsRegistry r){r.addMapping("/**").allowedOrigins(Arrays.stream(p.corsOrigins().split(",")).map(String::trim).toArray(String[]::new)).allowedMethods("GET","POST","PUT","DELETE","OPTIONS").allowedHeaders("*").allowCredentials(true);} }
