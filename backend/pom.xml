@@ -77,18 +77,22 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- ONNX Runtime -->
-    <dependency>
-      <groupId>com.microsoft.onnxruntime</groupId>
-      <artifactId>onnxruntime</artifactId>
-      <version>1.20.0</version>
-    </dependency>
-
     <!-- PDF Generation -->
     <dependency>
       <groupId>org.apache.pdfbox</groupId>
       <artifactId>pdfbox</artifactId>
       <version>3.0.3</version>
+    </dependency>
+
+    <!-- Flyway Database Migrations -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-mysql</artifactId>
     </dependency>
 
   </dependencies>

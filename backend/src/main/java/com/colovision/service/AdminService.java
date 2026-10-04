@@ -20,15 +20,15 @@ public class AdminService {
         return userRepository.findByStatus("PENDING");
     }
 
-    public List<User> getActiveMembers() {
-        return userRepository.findByStatus("ACTIVE");
+    public List<User> getApprovedUsers() {
+        return userRepository.findByStatus("APPROVED");
     }
 
     public User approveUser(Long userId, Long adminId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
-        user.status = "ACTIVE";
+        user.status = "APPROVED";
         user.approvedBy = adminId;
         user.approvedAt = Instant.now();
 

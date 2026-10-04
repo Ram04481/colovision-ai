@@ -60,6 +60,85 @@
 
 ---
 
+## [2026-10-01] - Phase 1: Project/Build/Startup Stabilization
+
+### Verified
+- Backend: Maven build successful (`mvn clean install` ✅)
+- Backend: Spring Boot starts on port 8080, `/health` returns `{"status":"ok"}`
+- Backend: MySQL connection verified (HikariPool connects to colorectal_ai DB)
+- Backend: CORS configuration working
+- Frontend: `npm run build` successful (Tailwind v4 @theme warnings noted)
+- ML Service: FastAPI starts on port 8000, `/` returns `{"message":"ML API is running"}`
+- ML Service: `.pth` model files exist (293 MB + 48 MB)
+
+### Identified Issues (Phase 1)
+- **Backend**: Application terminates after ~12 seconds (no foreground process management)
+- **Backend**: Default JWT secret in `application.yml` (security risk)
+- **Backend**: Generated security password used instead of configured JWT secret
+- **Backend**: Dead code: `MlService` and `MlController` call non-existent FastAPI endpoint
+- **Backend**: Admin status inconsistency ("ACTIVE" vs "APPROVED")
+- **Backend**: No Flyway migrations, no database indexes
+- **Backend**: `MlController` at `/api/ml/predict` delegates to broken `MlService`
+- **Frontend**: Tailwind v4 `@theme` warnings during build (css-post timing)
+- **Frontend**: No `/admin` route registered in `App.tsx`
+- **Frontend**: No protected routes / auth context
+- **ML Service**: FastAPI `/health` endpoint missing (returns 404)
+- **ML Service**: `.pth` models not loaded at startup
+- **ML Service**: `/predict` endpoint returns stub response
+- **Config**: Spring Boot generates random security password instead of using JWT secret
+
+### Root Causes
+- Spring Boot's `UserDetailsServiceAutoConfiguration` activates due to missing custom UserDetailsService
+- `MlService` hardcoded to `http://127.0.0.1:8000` but FastAPI wasn't running during testing
+- Tailwind CSS v4 uses `@theme` directive not recognized by lightningcss
+- FastAPI app missing `/health` endpoint
+- Application runs but process exits when Maven plugin / background process ends
+
+### Next Steps (Phase 2+)
+- Fix Spring Boot security configuration to use JWT properly
+- Remove dead `MlService`/`MlController` code
+- Implement FastAPI model loading at startup
+- Add `/health` endpoint to FastAPI
+- Add Flyway migrations
+- Add database indexes
+- Implement admin seeding
+
+---
+
+## [2026-10-01] - Phase 2: Database Configuration and Integrity
+
+### Added
+- Flyway database migration dependency (`flyway-core`, `flyway-mysql`)
+- Initial migration `V1__initial_schema.sql` creating all 5 tables with proper constraints
+- Migration `V2__add_missing_fk_and_indexes.sql` adding missing FK for predictions.patient_id and index
+- Flyway configuration in `application.yml` with `baseline-on-migrate: true`
+- Changed `spring.jpa.hibernate.ddl-auto` from `update` to `validate`
+- 9 database indexes for query performance (users.status, users.approved_by, patients.created_by, predictions.patient_id, etc.)
+- 5 foreign key constraints for data integrity (users→admins, patients→users, predictions→patients, reports→patients, reports→predictions)
+
+### Changed
+- `spring.jpa.hibernate.ddl-auto` changed from `update` to `validate` (Flyway controls schema)
+- MySQL schema now version-controlled via Flyway migrations
+
+### Fixed
+- Missing foreign key constraint on `predictions.patient_id` → `patients.id` (ON DELETE CASCADE)
+- Missing index on `predictions.patient_id` for query performance
+- Missing index on `users.status` for admin approval queries
+- Missing index on `users.approved_by` for admin lookup
+- Missing index on `patients.created_by` for user's patient list queries
+- Missing foreign keys: users.approved_by→admins.id, patients.created_by→users.id, reports.patient_id→patients.id, reports.prediction_id→predictions.id
+
+### Verified
+- Flyway migrations applied successfully on fresh database (V1 and V2)
+- `mvn clean install` successful
+- Spring Boot starts with `ddl-auto: validate` (no auto DDL)
+- Flyway schema history table tracks migrations correctly
+- All 5 foreign keys created and verified in MySQL
+- All 9 indexes created and verified in MySQL
+- Application starts and `/health` returns `{"status":"ok"}`
+
+---
+
 ## Future Entries Template
 
 ### [YYYY-MM-DD] - Phase X: Phase Name

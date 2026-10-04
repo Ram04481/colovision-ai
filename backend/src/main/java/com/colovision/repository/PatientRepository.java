@@ -10,4 +10,8 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     Optional<Patient> findByPatientId(String patientId);
 
     List<Patient> findByCreatedBy(Long createdBy);
+
+    long count();
+
+    List<Patient> findAll();
 }

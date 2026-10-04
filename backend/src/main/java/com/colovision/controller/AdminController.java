@@ -2,6 +2,7 @@ package com.colovision.controller;
 
 import com.colovision.model.User;
 import com.colovision.repository.UserRepository;
+import com.colovision.service.AdminService;
 import com.colovision.service.AuthService;
 
 import java.time.Instant;
@@ -18,22 +19,24 @@ public class AdminController {
 
     private final UserRepository users;
     private final AuthService auth;
+    private final AdminService adminService;
 
-    public AdminController(UserRepository u, AuthService a) {
+    public AdminController(UserRepository u, AuthService a, AdminService adminService) {
         users = u;
         auth = a;
+        this.adminService = adminService;
     }
 
     @GetMapping("/users/pending")
     List<User> pending(Authentication x) {
-        admin(x);
-        return users.findByStatus("PENDING");
+        requireAdmin(x);
+        return adminService.getPendingUsers();
     }
-    // === ADDED METHOD START ===
+
     @GetMapping("/users/approved")
     List<User> approved(Authentication x) {
-        admin(x);
-        return users.findByStatus("APPROVED");
+        requireAdmin(x);
+        return adminService.getApprovedUsers();
     }
 
     @PutMapping("/users/{id}/approve")
@@ -60,8 +63,7 @@ public class AdminController {
         return update(id, "SUSPENDED", x);
     }
 
-    private com.colovision.model.Admin admin(Authentication x) {
-
+    private void requireAdmin(Authentication x) {
         if (x.getAuthorities()
                 .stream()
                 .noneMatch(a ->
@@ -70,8 +72,6 @@ public class AdminController {
             throw new org.springframework.security.access.AccessDeniedException(
                     "Administrator access required");
         }
-
-        return auth.currentAdmin(x.getName());
     }
 
     private Map<String, String> update(
@@ -79,14 +79,15 @@ public class AdminController {
             String state,
             Authentication x) {
 
-        var a = admin(x);
+        requireAdmin(x);
+        var admin = auth.currentAdmin(x.getName());
 
         User u = users.findById(id)
                 .orElseThrow(() ->
                         new NoSuchElementException("User not found"));
 
         u.status = state;
-        u.approvedBy = a.id;
+        u.approvedBy = admin.id;
         u.approvedAt = Instant.now();
 
         users.save(u);

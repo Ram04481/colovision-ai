@@ -7,4 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PredictionRepository extends JpaRepository<Prediction, Long> {
 
     List<Prediction> findByPatientIdOrderByCreatedAtDesc(Long patientId);
+
+    long count();
+
+    List<Prediction> findAll();
 }

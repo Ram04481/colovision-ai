@@ -29,8 +29,7 @@
 | approved_by | BIGINT | FK → admins.id | Approving admin |
 | approved_at | TIMESTAMP | | Approval time |
 
-**Indexes**: Primary key on `id`, Unique on `email`, Unique on `username`
-**Missing Index**: `status` (critical for admin queries)
+**Indexes**: Primary key on `id`, Unique on `email`, Unique on `username`, Index on `status`, Index on `approved_by`
 
 ---
 
@@ -48,8 +47,7 @@
 | created_by | BIGINT | NOT NULL, FK → users.id | Owning user |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Creation time |
 
-**Indexes**: Primary key on `id`, Unique on `patient_id`
-**Missing Index**: `created_by` (for user's patient list)
+**Indexes**: Primary key on `id`, Unique on `patient_id`, Index on `created_by`
 
 ---
 
@@ -57,7 +55,7 @@
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | BIGINT | PK, AUTO_INCREMENT | Primary key |
-| patient_id | BIGINT | NOT NULL | Owning patient |
+| patient_id | BIGINT | NOT NULL, FK → patients.id | Owning patient |
 | image_path | VARCHAR(500) | NOT NULL | Original image path |
 | segmentation_path | VARCHAR(500) | NOT NULL | Mask image path |
 | overlay_path | VARCHAR(500) | NOT NULL | Overlay image path |
@@ -71,9 +69,7 @@
 | serrated_probability | DOUBLE | NOT NULL | Class 5 probability |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Creation time |
 
-**Indexes**: Primary key on `id`
-**Missing Index**: `patient_id` (for patient history)
-**Missing FK**: `patient_id` → `patients.id` (currently insertable=false, updatable=false)
+**Indexes**: Primary key on `id`, Index on `patient_id` (FK)
 
 ---
 
@@ -82,11 +78,12 @@
 |--------|------|-------------|-------------|
 | id | BIGINT | PK, AUTO_INCREMENT | Primary key |
 | patient_id | BIGINT | NOT NULL | Patient (redundant) |
-| prediction_id | BIGINT | UNIQUE, NOT NULL | Linked prediction |
+| prediction_id | BIGINT | UNIQUE, NOT NULL, FK → predictions.id | Linked prediction |
 | report_path | VARCHAR(500) | NOT NULL | PDF file path |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Generation time |
 
-**Indexes**: Primary key on `id`, Unique on `prediction_id`
+**Indexes**: Primary key on `id`, Unique on `prediction_id`, FK index on `patient_id`
+
 **Redundant Column**: `patient_id` (derivable via prediction → patient)
 
 ---
@@ -96,29 +93,73 @@
 ```
 admins (1) ──< (N) users (approved_by)
 users (1) ──< (N) patients (created_by)
-patients (1) ──< (N) predictions (patient_id)
-predictions (1) ── (1) reports (prediction_id)
+patients (1) ──< (N) predictions (patient_id) ON DELETE CASCADE
+predictions (1) ── (1) reports (prediction_id) ON DELETE SET NULL
 ```
 
 ---
 
-## Current Issues
+## Flyway Migration Strategy
 
-1. **Missing FK on predictions.patient_id**: JPA uses `@JoinColumn(insertable=false,updatable=false)` but no actual FK constraint in DB
-2. **No indexes on query columns**: `users.status`, `patients.created_by`, `predictions.patient_id`
-3. **Redundant reports.patient_id**: Can be derived, wastes space
-4. **No cascade rules**: Deleting user doesn't cascade to patients/predictions
-5. **Hibernate auto-update only**: No versioned migrations (Flyway needed)
+### Migration Files
+- `V1__initial_schema.sql` - Creates all tables, foreign keys, and indexes
+- `V2__add_missing_fk_and_indexes.sql` - Adds missing FK for predictions.patient_id and index
+
+### Migration Status
+| Version | Description | Status |
+|---------|-------------|--------|
+| 1 | initial schema | ✅ Applied |
+| 2 | add missing fk and indexes | ✅ Applied |
+
+### Current Schema Status (Post-Migration)
+- **All tables created**: ✅ admins, users, patients, predictions, reports
+- **All FKs created**: ✅ 5 foreign keys
+- **All indexes created**: ✅ 9 indexes (5 PK, 4 unique, 4 regular)
 
 ---
 
-## Recommended Fixes (Phase 2)
+## Current Schema Verification (Post-Migration)
 
-1. Add Flyway migration scripts
-2. Add FK: `predictions.patient_id` → `patients.id` ON DELETE CASCADE
-3. Add indexes:
-   - `CREATE INDEX idx_users_status ON users(status)`
-   - `CREATE INDEX idx_patients_created_by ON patients(created_by)`
-   - `CREATE INDEX idx_predictions_patient_id ON predictions(patient_id)`
-4. Remove `reports.patient_id` column
-5. Add cascade: `patients` ON DELETE CASCADE → `predictions`
+### Foreign Keys (5 total)
+| Table | Column | References | On Delete |
+|-------|--------|------------|-----------|
+| users | approved_by | admins.id | SET NULL |
+| patients | created_by | users.id | SET NULL |
+| predictions | patient_id | patients.id | CASCADE |
+| reports | patient_id | patients.id | SET NULL |
+| reports | prediction_id | predictions.id | SET NULL |
+
+### Indexes (13 total)
+| Table | Index Name | Columns | Type |
+|-------|------------|---------|------|
+| admins | PRIMARY | id | PK |
+| admins | uk_admin_email | email | UNIQUE |
+| users | PRIMARY | id | PK |
+| users | uk_user_email | email | UNIQUE |
+| users | uk_user_username | username | UNIQUE |
+| users | idx_user_status | status | INDEX |
+| users | idx_user_approved_by | approved_by | INDEX |
+| patients | PRIMARY | id | PK |
+| patients | uk_patient_patient_id | patient_id | UNIQUE |
+| patients | idx_patient_created_by | created_by | INDEX |
+| predictions | PRIMARY | id | PK |
+| predictions | idx_prediction_patient_id | patient_id | INDEX (FK) |
+| reports | PRIMARY | id | PK |
+| reports | uk_report_prediction_id | prediction_id | UNIQUE |
+| reports | fk_report_patient | patient_id | INDEX (FK) |
+
+---
+
+## Remaining Issues
+
+1. **Redundant reports.patient_id**: Can be derived via prediction → patient
+2. **No cascade rules on users → patients**: Deleting user doesn't cascade to patients
+3. **Reports FK to predictions**: ON DELETE SET NULL (should this be CASCADE?)
+4. **Reports redundant patient_id**: Can be derived via prediction → patient
+
+---
+
+## Schema Validation
+- `spring.jpa.hibernate.ddl-auto: validate` (configured)
+- Flyway migrations control schema evolution
+- No automatic DDL updates in production

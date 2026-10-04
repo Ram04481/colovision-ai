@@ -6,9 +6,11 @@ import com.colovision.model.Prediction;
 import com.colovision.repository.PatientRepository;
 import com.colovision.repository.PredictionRepository;
 import com.colovision.service.AuthService;
-import com.colovision.service.ModelService;
+import com.colovision.service.MlService;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -31,20 +33,20 @@ public class PredictionController {
     private final PatientRepository patients;
     private final PredictionRepository predictions;
     private final AuthService auth;
-    private final ModelService models;
+    private final MlService ml;
     private final AppProperties props;
 
     public PredictionController(
             PatientRepository p,
             PredictionRepository x,
             AuthService a,
-            ModelService m,
+            MlService m,
             AppProperties q) {
 
         patients = p;
         predictions = x;
         auth = a;
-        models = m;
+        ml = m;
         props = q;
     }
 
@@ -97,9 +99,11 @@ public class PredictionController {
 
         Files.copy(image.getInputStream(), source);
 
-        var r = models.predict(original);
+        var r = ml.predict(image);
 
+        // Save mask
         ImageIO.write(r.mask(), "png", mask.toFile());
+        // Save overlay
         ImageIO.write(r.overlay(), "png", overlay.toFile());
 
         Prediction p = new Prediction();
@@ -108,7 +112,7 @@ public class PredictionController {
         p.imagePath = source.toString();
         p.segmentationPath = mask.toString();
         p.overlayPath = overlay.toString();
-        p.predictedClass = r.label();
+        p.predictedClass = r.predictedClass();
         p.confidence = r.confidence();
 
         double[] q = r.probabilities();
@@ -124,7 +128,7 @@ public class PredictionController {
 
         return Map.of(
                 "id", p.id,
-                "predicted_class", r.label(),
+                "predicted_class", r.predictedClass(),
                 "confidence", r.confidence(),
                 "probabilities", q,
                 "mask_path", p.segmentationPath,

@@ -1,44 +1,52 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 export function Login() {
   const [error, setError] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
-
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
 
-    const data = new FormData(e.currentTarget);
+    const formData = new FormData(e.currentTarget);
 
     try {
       const endpoint = isAdmin
         ? "/auth/admin/login"
         : "/auth/login";
 
-      const response = await api.post(endpoint, {
-        identifier: data.get("identifier"),
-        password: data.get("password"),
+      const response = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:8080/api"}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          identifier: formData.get("identifier"),
+          password: formData.get("password"),
+        }),
       });
 
-      localStorage.setItem(
-        "access_token",
-        response.data.access_token
-      );
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Login failed");
+      }
+
+      const responseData = await response.json();
+      localStorage.setItem("access_token", responseData.access_token);
+      localStorage.setItem("role", isAdmin ? "admin" : "user");
 
       if (isAdmin) {
         navigate("/admin");
       } else {
         navigate("/dashboard");
       }
-    } catch {
+    } catch (err: any) {
       setError(
         isAdmin
           ? "Admin login failed. Check your administrator credentials."
-          : "Unable to sign in. Check your credentials or account approval status."
+          : err.message || "Unable to sign in. Check your credentials or account approval status."
       );
     }
   }
@@ -110,4 +118,3 @@ export function Login() {
     </section>
   );
 }
-

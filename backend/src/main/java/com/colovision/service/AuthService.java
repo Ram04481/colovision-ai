@@ -45,4 +45,7 @@ public class AuthService {
     public Admin currentAdmin(String id){
         return admins.findById(Long.valueOf(id)).orElseThrow(()->new BadCredentialsException("Administrator not found"));
     }
+    public User findByEmailOrUsername(String identifier) {
+        return users.findByEmailOrUsername(identifier, identifier).orElse(null);
+    }
 }
