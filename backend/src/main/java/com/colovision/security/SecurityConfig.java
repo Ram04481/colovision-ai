@@ -70,7 +70,10 @@ public class SecurityConfig {
                     var a = new SimpleGrantedAuthority("ROLE_" + x.get("role", String.class).toUpperCase());
                     var auth = new UsernamePasswordAuthenticationToken(x.getSubject(), null, List.of(a));
                     org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    // Log the error for debugging but don't set authentication
+                    // This allows the request to continue without authentication (will result in 403 if endpoint requires auth)
+                    // In production, you might want to log this: logger.warn("JWT validation failed", e);
                 }
             }
             c.doFilter(r, s);

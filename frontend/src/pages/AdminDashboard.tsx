@@ -252,6 +252,12 @@ export const AdminDashboard: React.FC = () => {
                         >
                           View Details
                         </button>
+                        <button 
+                          onClick={() => window.open(`/patients/${p.id}/predictions`, '_blank')}
+                          style={{ color: 'green', marginRight: '8px' }}
+                        >
+                          View Predictions
+                        </button>
                       </td>
                     </tr>
                   ))}

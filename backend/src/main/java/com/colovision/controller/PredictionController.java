@@ -35,6 +35,7 @@ public class PredictionController {
     private final AuthService auth;
     private final MlService ml;
     private final AppProperties props;
+    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PredictionController.class);
 
     public PredictionController(
             PatientRepository p,
@@ -56,15 +57,31 @@ public class PredictionController {
     )
     Map<String, Object> predict(
             @RequestParam Long patient_id,
-            @RequestParam MultipartFile image,
+            @RequestParam("file") MultipartFile image,
             Authentication x) throws Exception {
 
-        var u = auth.currentUser(x.getName());
+        log.info("Prediction request received: patient_id={}, filename={}, contentType={}", 
+                patient_id, image.getOriginalFilename(), image.getContentType());
+
+        Long currentUserId;
+        boolean isAdmin = x.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            currentUserId = Long.valueOf(x.getName());
+        } else {
+            var u = auth.currentUser(x.getName());
+            currentUserId = u.id;
+        }
+
+        log.info("Current user ID: {}, isAdmin: {}", currentUserId, isAdmin);
 
         Patient patient = patients.findById(patient_id)
-                .filter(p -> p.createdBy.equals(u.id))
+                .filter(p -> p.createdBy.equals(currentUserId))
                 .orElseThrow(() ->
                         new NoSuchElementException("Patient not found"));
+
+        log.info("Patient found: {}", patient.id);
 
         if (!Set.of("image/jpeg", "image/png")
                 .contains(image.getContentType())) {
@@ -80,6 +97,8 @@ public class PredictionController {
             throw new IllegalArgumentException(
                     "Invalid image file");
         }
+
+        log.info("Image validated: {}x{}", original.getWidth(), original.getHeight());
 
         String id = UUID.randomUUID().toString();
 
@@ -99,7 +118,9 @@ public class PredictionController {
 
         Files.copy(image.getInputStream(), source);
 
+        log.info("Calling ML service...");
         var r = ml.predict(image);
+        log.info("ML service returned: predictedClass={}, confidence={}", r.predictedClass(), r.confidence());
 
         // Save mask
         ImageIO.write(r.mask(), "png", mask.toFile());
@@ -141,10 +162,19 @@ public class PredictionController {
             @PathVariable Long patientId,
             Authentication x) {
 
-        var u = auth.currentUser(x.getName());
+        Long currentUserId;
+        boolean isAdmin = x.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            currentUserId = Long.valueOf(x.getName());
+        } else {
+            var u = auth.currentUser(x.getName());
+            currentUserId = u.id;
+        }
 
         patients.findById(patientId)
-                .filter(p -> p.createdBy.equals(u.id))
+                .filter(p -> p.createdBy.equals(currentUserId))
                 .orElseThrow(() ->
                         new NoSuchElementException(
                                 "Patient not found"));

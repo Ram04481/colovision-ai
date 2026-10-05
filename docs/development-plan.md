@@ -122,12 +122,12 @@
 
 ### PHASE 6 — User Approval Workflow
 **Goal**: Complete pending → approved/rejected/suspended flow
-**Current Status**: ✅ BACKEND DONE, ✅ FRONTEND DONE (AdminDashboard)
+**Current Status**: ✅ COMPLETED (Backend + Frontend both done)
 **Prerequisites**: PHASE 5
 **Tasks**:
-- [ ] Verify status values consistent: "PENDING" → "APPROVED"/"REJECTED"/"SUSPENDED"
-- [ ] Frontend: Real-time updates after approve/reject/suspend
-- [ ] Frontend: Loading states on admin actions
+- [x] Verify status values consistent: "PENDING" → "APPROVED"/"REJECTED"/"SUSPENDED"
+- [x] Frontend: Real-time updates after approve/reject/suspend
+- [x] Frontend: Loading states on admin actions
 - [ ] Backend: Audit log for admin actions (optional)
 **Files**: `AdminService.java`, `AdminController.java`, `AdminDashboard.tsx`
 **Verification**: Register user → appears in admin pending → approve → user can login
@@ -139,15 +139,15 @@
 
 ### PHASE 7 — Patient Management
 **Goal**: Complete patient CRUD with ownership
-**Current Status**: ✅ BACKEND DONE, ⚠️ FRONTEND PARTIAL (create only, no list/view)
+**Current Status**: ✅ COMPLETED (Backend + Frontend integrated in Dashboard)
 **Prerequisites**: PHASE 4
 **Tasks**:
-- [ ] Frontend: Patient list page (`/patients`) with pagination
-- [ ] Frontend: Patient detail page (`/patients/:id`)
+- [x] Frontend: Patient list page (integrated in Dashboard)
+- [x] Frontend: Patient detail page (via prediction history)
 - [ ] Frontend: Edit patient (optional)
 - [ ] Backend: Add patient photo upload endpoint
 - [ ] Frontend: Photo upload in create/edit
-**Files**: `PatientController.java`, new frontend pages `PatientList.tsx`, `PatientDetail.tsx`, `PatientForm.tsx`
+**Files**: `PatientController.java`, `Dashboard.tsx`, `PredictionHistory.tsx`
 **Verification**: User creates patient → sees in list → views detail → owns data
 **Dependencies**: PHASE 4
 **Risks**: None
@@ -157,16 +157,18 @@
 
 ### PHASE 8 — Image Upload and Validation
 **Goal**: Secure, validated image upload
-**Current Status**: ⚠️ PARTIAL (basic validation only)
+**Current Status**: ✅ COMPLETED (Content-Type, size limits, UUID filenames)
 **Prerequisites**: PHASE 7
 **Tasks**:
+- [x] Backend: Content-Type validation (JPEG/PNG only)
+- [x] Backend: Size limits (10MB via config)
+- [x] Backend: UUID filenames prevent path traversal
 - [ ] Backend: Add magic bytes validation (JPEG: FF D8 FF, PNG: 89 50 4E 47)
 - [ ] Backend: Add image dimension limits (e.g., max 4096×4096)
-- [ ] Backend: Sanitize filename, prevent path traversal
 - [ ] Frontend: Image preview before upload
 - [ ] Frontend: Progress indicator for large uploads
 - [ ] Backend: Virus scan integration point (ClamAV) - optional
-**Files**: `PredictionController.java`, `AddPatient.tsx`
+**Files**: `PredictionController.java`, `AddPatient.tsx`, `application.yml`
 **Verification**: Invalid files rejected; valid files accepted; preview works
 **Dependencies**: PHASE 7
 **Risks**: False positives on validation
@@ -176,19 +178,19 @@
 
 ### PHASE 9 — FastAPI ML Service Stabilization
 **Goal**: Production-ready FastAPI service with real model inference
-**Current Status**: ❌ MISSING (only stub exists)
+**Current Status**: ✅ COMPLETED (FastAPI runs with real PyTorch models)
 **Prerequisites**: PHASE 1 (models exported/available)
 **Tasks**:
-- [ ] Create `ML_API/main.py` with FastAPI app
-- [ ] Implement model loading at startup (segmentation + classification)
-- [ ] Implement `/predict` endpoint: multipart image → JSON response
-- [ ] Match training preprocessing EXACTLY (resize, normalize, tensor)
-- [ ] Add request validation, error handling, logging
-- [ ] Add `/health` endpoint
-- [ ] Configure CORS for Spring Boot origin only
-- [ ] Create `requirements.txt` with pinned versions
+- [x] Create `ML_API/app.py` with FastAPI app
+- [x] Implement model loading at startup (segmentation + classification)
+- [x] Implement `/predict` endpoint: multipart image → JSON response
+- [x] Match training preprocessing EXACTLY (resize, normalize, tensor)
+- [x] Add request validation, error handling, logging
+- [x] Add `/health` endpoint
+- [x] Configure CORS for Spring Boot origin only
+- [x] Create `requirements.txt` with pinned versions
 - [ ] Add Dockerfile for ML service (optional)
-**Files**: `ML_API/main.py`, `ML_API/requirements.txt`, `ML_API/Dockerfile`, `ML_API/model_loader.py`, `ML_API/preprocessing.py`
+**Files**: `ML_API/app.py`, `ML_API/requirements.txt`
 **Verification**: `POST /predict` with test image → returns valid prediction JSON
 **Dependencies**: PHASE 1 (model files ready)
 **Risks**: Preprocessing mismatch; model loading memory; PyTorch/ONNX version conflicts
@@ -198,16 +200,16 @@
 
 ### PHASE 10 — Segmentation Model Integration
 **Goal**: Segmentation model working in FastAPI
-**Current Status**: ❌ MISSING
+**Current Status**: ✅ COMPLETED (U-Net ResNet34 loaded and inferencing)
 **Prerequisites**: PHASE 9
 **Tasks**:
-- [ ] Load `best_segmentation_model.pth` (U-Net ResNet34)
-- [ ] Implement preprocessing: resize 256×256, ImageNet normalize, CHW tensor
-- [ ] Run inference: `model.eval()`, `torch.no_grad()`
-- [ ] Post-process: sigmoid → threshold 0.5 → binary mask
-- [ ] Return mask as base64 PNG or save to shared volume
-- [ ] Verify output matches training evaluation (Dice/IoU)
-**Files**: `ML_API/segmentation.py`, `ML_API/main.py`
+- [x] Load `best_segmentation_model.pth` (U-Net ResNet34)
+- [x] Implement preprocessing: resize 256×256, ImageNet normalize, CHW tensor
+- [x] Run inference: `model.eval()`, `torch.no_grad()`
+- [x] Post-process: sigmoid → threshold 0.5 → binary mask
+- [x] Return mask as base64 PNG
+- [x] Verify output matches training evaluation (Dice/IoU)
+**Files**: `ML_API/app.py`
 **Verification**: Test image → mask matches expected output from training notebook
 **Dependencies**: PHASE 9
 **Risks**: Threshold tuning; input size handling for non-square images
@@ -217,16 +219,16 @@
 
 ### PHASE 11 — Classification Model Integration
 **Goal**: Classification model working in FastAPI
-**Current Status**: ❌ MISSING
+**Current Status**: ✅ COMPLETED (EfficientNet-B0 loaded and inferencing)
 **Prerequisites**: PHASE 9
 **Tasks**:
-- [ ] Load `best_classifier_model_v3.pth` (EfficientNet-B0)
-- [ ] Implement preprocessing: resize 224×224, ImageNet normalize, CHW tensor
-- [ ] Run inference: `model.eval()`, `torch.no_grad()`
-- [ ] Post-process: softmax → 6 probabilities → argmax → predicted class
-- [ ] **CRITICAL**: Verify class order matches training checkpoint `class_names`
-- [ ] Return all 6 probabilities + predicted class + confidence
-**Files**: `ML_API/classification.py`, `ML_API/main.py`
+- [x] Load `best_classifier_model_v3.pth` (EfficientNet-B0)
+- [x] Implement preprocessing: resize 224×224, ImageNet normalize, CHW tensor
+- [x] Run inference: `model.eval()`, `torch.no_grad()`
+- [x] Post-process: softmax → 6 probabilities → argmax → predicted class
+- [x] **CRITICAL**: Verify class order matches training checkpoint `class_names`
+- [x] Return all 6 probabilities + predicted class + confidence
+**Files**: `ML_API/app.py`
 **Verification**: Test images from training set → predictions match training evaluation
 **Dependencies**: PHASE 9
 **Risks**: Class order mismatch (training: lowercase, inference: Title Case); preprocessing differences
@@ -236,15 +238,15 @@
 
 ### PHASE 12 — End-to-End AI Inference Pipeline
 **Goal**: Complete FastAPI `/predict` combining segmentation + classification
-**Current Status**: ❌ MISSING
+**Current Status**: ✅ COMPLETED (Single endpoint returns mask + classification + 6 probs)
 **Prerequisites**: PHASE 10, PHASE 11
 **Tasks**:
-- [ ] Combine segmentation + classification in single `/predict` request
-- [ ] **DECISION**: Does classification use full image or segmented region? (Verify training)
-- [ ] Optimize: run both models, return combined response
-- [ ] Add timing/metrics logging
-- [ ] Handle errors gracefully (model errors → 503 with detail)
-**Files**: `ML_API/main.py`, `ML_API/pipeline.py`
+- [x] Combine segmentation + classification in single `/predict` request
+- [x] Classification uses full image (verified with training)
+- [x] Optimize: run both models, return combined response
+- [x] Add timing/metrics logging
+- [x] Handle errors gracefully (model errors → 503 with detail)
+**Files**: `ML_API/app.py`
 **Verification**: Single request → returns mask + classification + probabilities
 **Dependencies**: PHASE 10, PHASE 11
 **Risks**: Memory usage with both models; inference latency
@@ -254,15 +256,15 @@
 
 ### PHASE 13 — Prediction Persistence
 **Goal**: Spring Boot saves FastAPI results to database
-**Current Status**: ✅ BACKEND STRUCTURE DONE, ❌ INTEGRATION BROKEN (no FastAPI)
+**Current Status**: ✅ COMPLETED (Spring Boot → FastAPI → DB works end-to-end)
 **Prerequisites**: PHASE 12
 **Tasks**:
-- [ ] Spring Boot `PredictionController` calls FastAPI `/predict`
-- [ ] Handle FastAPI errors (timeout, 503, validation)
-- [ ] Save mask/overlay to filesystem, paths to DB
-- [ ] Save all 6 probabilities to `Prediction` entity
-- [ ] Return prediction ID + results to frontend
-**Files**: `PredictionController.java`, `ModelService.java` (refactor to HTTP client), `AppProperties.java`
+- [x] Spring Boot `PredictionController` calls FastAPI `/predict`
+- [x] Handle FastAPI errors (timeout, 503, validation)
+- [x] Save mask/overlay to filesystem, paths to DB
+- [x] Save all 6 probabilities to `Prediction` entity
+- [x] Return prediction ID + results to frontend
+**Files**: `PredictionController.java`, `MlService.java`, `AppProperties.java`
 **Verification**: Upload image → prediction saved in DB → mask/overlay files exist → response returned
 **Dependencies**: PHASE 12
 **Risks**: Network failures between services; file storage paths
@@ -272,15 +274,15 @@
 
 ### PHASE 14 — Frontend/Backend Integration
 **Goal**: Frontend fully connected to working backend
-**Current Status**: ⚠️ PARTIAL (API calls match but backend ML broken)
+**Current Status**: ✅ COMPLETED (All API calls work end-to-end)
 **Prerequisites**: PHASE 13
 **Tasks**:
-- [ ] Test all frontend API calls against working backend
-- [ ] Fix any contract mismatches
-- [ ] Add loading states to all async operations
-- [ ] Add error boundaries and user-friendly error messages
-- [ ] Test admin workflow end-to-end
-**Files**: `frontend/src/services/api.tsx`, all frontend pages
+- [x] Test all frontend API calls against working backend
+- [x] Fix any contract mismatches
+- [x] Add loading states to all async operations
+- [x] Add error boundaries and user-friendly error messages
+- [x] Test admin workflow end-to-end
+**Files**: `frontend/src/services/api.ts`, all frontend pages
 **Verification**: Full user journey: register → approve → login → create patient → upload → see results
 **Dependencies**: PHASE 13
 **Risks**: CORS issues; token expiry during long uploads
@@ -290,16 +292,16 @@
 
 ### PHASE 15 — Prediction Result UI
 **Goal**: Rich prediction visualization
-**Current Status**: ❌ MISSING (only basic text result in AddPatient)
+**Current Status**: ✅ COMPLETED (PredictionDetail + PredictionHistory pages implemented)
 **Prerequisites**: PHASE 14
 **Tasks**:
-- [ ] Frontend: Prediction detail page showing original, mask, overlay side-by-side
-- [ ] Frontend: Probability chart (Recharts) for 6 classes
-- [ ] Frontend: Confidence indicator with color coding
-- [ ] Frontend: Patient prediction history page
-- [ ] Frontend: Download mask/overlay images
-**Files**: New frontend pages `PredictionDetail.tsx`, `PredictionHistory.tsx`, components `ImageComparison.tsx`, `ProbabilityChart.tsx`
-**Verification**: User sees visual comparison; chart renders correctly
+- [x] Frontend: Prediction detail page showing original, mask, overlay side-by-side
+- [x] Frontend: Probability bars for 6 classes with color coding
+- [x] Frontend: Confidence indicator with color coding
+- [x] Frontend: Patient prediction history page
+- [x] Frontend: Download mask/overlay images (via report)
+**Files**: `PredictionDetail.tsx`, `PredictionHistory.tsx`, `ReportView.tsx`
+**Verification**: User sees visual comparison; probability bars render correctly
 **Dependencies**: PHASE 14
 **Risks**: Image loading performance
 **Exit Criteria**: Rich prediction UI complete
@@ -308,15 +310,16 @@
 
 ### PHASE 16 — PDF Reporting
 **Goal**: Professional PDF reports
-**Current Status**: ✅ BACKEND DONE, ❌ FRONTEND MISSING
+**Current Status**: ✅ COMPLETED (Backend + Frontend ReportView page)
 **Prerequisites**: PHASE 14
 **Tasks**:
-- [ ] Frontend: Report view page (`/reports/:id`)
-- [ ] Frontend: Trigger report generation, show loading
-- [ ] Frontend: Download button
+- [x] Frontend: Report view page (`/report/:id`)
+- [x] Frontend: Trigger report generation, show loading
+- [x] Frontend: Download button + Open in new tab
+- [x] Frontend: PDF preview via iframe
 - [ ] Backend: Enhance report with images (original, mask, overlay embedded)
 - [ ] Backend: Add report metadata (generated at, generated by)
-**Files**: `ReportService.java`, `ReportController.java`, new frontend `ReportView.tsx`
+**Files**: `ReportService.java`, `ReportController.java`, `ReportView.tsx`
 **Verification**: Report generates with all content; downloads correctly
 **Dependencies**: PHASE 14
 **Risks**: PDFBox image embedding complexity; large PDF size

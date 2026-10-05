@@ -46,7 +46,16 @@ public class PatientController {
                     "Patient ID already exists");
         }
 
-        var u = auth.currentUser(x.getName());
+        Long currentUserId;
+        boolean isAdmin = x.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            currentUserId = Long.valueOf(x.getName());
+        } else {
+            var u = auth.currentUser(x.getName());
+            currentUserId = u.id;
+        }
 
         Patient p = new Patient();
 
@@ -56,7 +65,7 @@ public class PatientController {
         p.age = i.age();
         p.gender = i.gender();
         p.contact = i.contact();
-        p.createdBy = u.id;
+        p.createdBy = currentUserId;
 
         return ResponseEntity
                 .status(201)
@@ -66,9 +75,17 @@ public class PatientController {
     @GetMapping
     List<Patient> all(Authentication x) {
 
-        return patients.findByCreatedBy(
-                auth.currentUser(x.getName()).id
-        );
+        Long currentUserId;
+        boolean isAdmin = x.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            currentUserId = Long.valueOf(x.getName());
+        } else {
+            currentUserId = auth.currentUser(x.getName()).id;
+        }
+
+        return patients.findByCreatedBy(currentUserId);
     }
 
     @GetMapping("/{id}")
@@ -76,10 +93,19 @@ public class PatientController {
             @PathVariable Long id,
             Authentication x) {
 
-        var u = auth.currentUser(x.getName());
+        Long currentUserId;
+        boolean isAdmin = x.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            currentUserId = Long.valueOf(x.getName());
+        } else {
+            var u = auth.currentUser(x.getName());
+            currentUserId = u.id;
+        }
 
         return patients.findById(id)
-                .filter(p -> p.createdBy.equals(u.id))
+                .filter(p -> p.createdBy.equals(currentUserId))
                 .orElseThrow(() ->
                         new NoSuchElementException(
                                 "Patient not found"));

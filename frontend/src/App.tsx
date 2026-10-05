@@ -29,9 +29,10 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={["user", "admin"]} />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/patients/new" element={<AddPatient />} />
-            <Route path="/predictions" element={<PredictionHistory />} />
-            <Route path="/predictions/:id" element={<PredictionDetail />} />
-            <Route path="/reports/:id" element={<ReportView />} />
+            <Route path="/patients/:patientId/predictions" element={<PredictionHistory />} />
+            <Route path="/patients/:patientId/predictions/:id" element={<PredictionDetail />} />
+            <Route path="/report/:id" element={<ReportView />} />
+            <Route path="/patients/:patientId/report/:predictionId" element={<ReportView />} />
           </Route>
 
           {/* Admin-only routes */}

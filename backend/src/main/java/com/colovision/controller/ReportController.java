@@ -53,7 +53,18 @@ public class ReportController {
             @PathVariable Long id,
             Authentication x) throws Exception {
 
-        return data(id, x).map;
+        Long currentUserId;
+        boolean isAdmin = x.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            currentUserId = Long.valueOf(x.getName());
+        } else {
+            var u = auth.currentUser(x.getName());
+            currentUserId = u.id;
+        }
+
+        return data(id, currentUserId).map;
     }
 
     @GetMapping("/{id}/download")
@@ -61,7 +72,18 @@ public class ReportController {
             @PathVariable Long id,
             Authentication x) throws Exception {
 
-        var d = data(id, x);
+        Long currentUserId;
+        boolean isAdmin = x.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            currentUserId = Long.valueOf(x.getName());
+        } else {
+            var u = auth.currentUser(x.getName());
+            currentUserId = u.id;
+        }
+
+        var d = data(id, currentUserId);
 
         Path path = Path.of(d.report.reportPath);
 
@@ -76,9 +98,7 @@ public class ReportController {
 
     private Data data(
             Long id,
-            Authentication x) throws Exception {
-
-        var u = auth.currentUser(x.getName());
+            Long currentUserId) throws Exception {
 
         Prediction p = predictions.findById(id)
                 .orElseThrow(() ->
@@ -86,7 +106,7 @@ public class ReportController {
                                 "Prediction not found"));
 
         Patient patient = patients.findById(p.patientId)
-                .filter(v -> v.createdBy.equals(u.id))
+                .filter(v -> v.createdBy.equals(currentUserId))
                 .orElseThrow(() ->
                         new NoSuchElementException(
                                 "Prediction not found"));

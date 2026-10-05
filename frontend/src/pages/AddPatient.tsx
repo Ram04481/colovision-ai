@@ -1,17 +1,21 @@
 import { FormEvent, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { UploadCloud } from "lucide-react";
 import { createPatient, createPrediction } from "../services/api";
 
 export function AddPatient() {
+  const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!file) return;
     setError("");
     setNotice("");
+    setSubmitting(true);
 
     const f = new FormData(e.currentTarget);
 
@@ -25,16 +29,18 @@ export function AddPatient() {
         contact: f.get("contact") as string,
       });
 
-      const image = new FormData();
-      image.append("patient_id", patient.id.toString());
-      image.append("image", file);
-
       const prediction = await createPrediction(patient.id, file);
       setNotice(`Analysis complete: ${prediction.predicted_class} (${(prediction.confidence * 100).toFixed(1)}% confidence).`);
-      e.currentTarget.reset();
-      setFile(null);
+      
+      // Redirect to prediction detail page after a short delay
+      setTimeout(() => {
+        navigate(`/patients/${patient.id}/predictions/${prediction.id}`);
+      }, 1500);
+      
     } catch {
       setError("The patient record or analysis could not be completed. Check that the API is running and the models are available.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -58,7 +64,9 @@ export function AddPatient() {
           <span>{file ? file.name : "Choose a JPG, JPEG, or PNG testing image"}</span>
           <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={e => setFile(e.target.files?.[0] ?? null)} />
         </label>
-        <button className="button" type="submit">Analyze</button>
+        <button className="button" type="submit" disabled={submitting}>
+          {submitting ? 'Analyzing...' : 'Analyze'}
+        </button>
       </form>
     </section>
   );

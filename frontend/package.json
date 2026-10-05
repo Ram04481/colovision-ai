@@ -3,7 +3,11 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "scripts": { "dev": "vite", "build": "tsc --noEmit && vite build", "preview": "vite preview" },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
     "axios": "latest",
@@ -16,5 +20,11 @@
     "tailwindcss": "latest",
     "vite": "latest"
   },
-  "devDependencies": { "typescript": "latest", "@types/react": "latest", "@types/react-dom": "latest" }
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "esbuild": "^0.28.2",
+    "lightningcss": "^1.33.0",
+    "typescript": "latest"
+  }
 }

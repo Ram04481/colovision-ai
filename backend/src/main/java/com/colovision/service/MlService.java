@@ -21,6 +21,7 @@ public class MlService {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MlService.class);
 
     public MlService() {
         this.restClient = RestClient.builder()
@@ -29,6 +30,8 @@ public class MlService {
     }
 
     public PredictionResult predict(MultipartFile file) throws Exception {
+
+        log.info("Calling FastAPI /predict with file: {} ({})", file.getOriginalFilename(), file.getContentType());
 
         ByteArrayResource resource =
                 new ByteArrayResource(file.getBytes()) {
@@ -39,16 +42,23 @@ public class MlService {
                     }
                 };
 
-        String jsonResponse = restClient.post()
-                .uri("/predict")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(
-                        new org.springframework.util.LinkedMultiValueMap<>() {{
-                            add("file", resource);
-                        }}
-                )
-                .retrieve()
-                .body(String.class);
+        String jsonResponse;
+        try {
+            jsonResponse = restClient.post()
+                    .uri("/predict")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(
+                            new org.springframework.util.LinkedMultiValueMap<>() {{
+                                add("file", resource);
+                            }}
+                    )
+                    .retrieve()
+                    .body(String.class);
+            log.info("FastAPI response: {}", jsonResponse);
+        } catch (Exception e) {
+            log.error("FastAPI call failed: {}", e.getMessage(), e);
+            throw e;
+        }
 
         return parseResponse(jsonResponse);
     }
