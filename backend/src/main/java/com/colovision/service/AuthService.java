@@ -18,13 +18,18 @@ public class AuthService {
         jwt=j;
     }
     public String register(String name, String email, String phone, String username, String password) {
-        if(users.existsByEmailOrUsername(email,username))throw new IllegalArgumentException("Email or username already exists");
-        User u=new User();
-        u.name=name;
-        u.email=email;
-        u.phone=phone;
-        u.username=username;
-        u.passwordHash=encoder.encode(password);
+        if (users.existsByEmail(email)) {
+            throw new IllegalArgumentException("Email address is already registered.");
+        }
+        if (users.existsByUsername(username)) {
+            throw new IllegalArgumentException("Username is already registered.");
+        }
+        User u = new User();
+        u.name = name;
+        u.email = email;
+        u.phone = phone;
+        u.username = username;
+        u.passwordHash = encoder.encode(password);
         users.save(u);
         return "Registration submitted and waiting for administrator approval.";
     }
